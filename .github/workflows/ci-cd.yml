@@ -1,0 +1,39 @@
+name: Automated Cloud Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Maven tests
+        run: ./mvnw test
+
+      - name: Build Spring Boot application
+        run: ./mvnw clean package -DskipTests
+
+      - name: Build Docker image
+        run: docker build -t sushil1321/automated-cloud-deployment:latest .
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.SUSHIL1321 }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker image
+        run: docker push sushil1321/automated-cloud-deployment:latest
