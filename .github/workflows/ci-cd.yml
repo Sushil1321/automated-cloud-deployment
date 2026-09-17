@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -37,3 +37,15 @@ jobs:
 
       - name: Push Docker image
         run: docker push sushil1321/automated-cloud-deployment:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull sushil1321/automated-cloud-deployment:latest
+            docker stop automated-cloud-app || true
+            docker rm automated-cloud-app || true
+            docker run -d -p 8080:8080 --name automated-cloud-app sushil1321/automated-cloud-deployment:latest
