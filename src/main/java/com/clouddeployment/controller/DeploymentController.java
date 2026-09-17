@@ -8,6 +8,6 @@ public class DeploymentController {
 
     @GetMapping("/")
     public String home() {
-        return "Automated Cloud Deployment is Running!";
+        return "Automated Cloud Deployment is Running Successfully with CI/CD!";
     }
 }
