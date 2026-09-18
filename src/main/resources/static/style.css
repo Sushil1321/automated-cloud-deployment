@@ -42,7 +42,16 @@
     --shadow: 0 10px 30px rgba(0, 0, 0, .45);
 }
 
-html { scroll-behavior: smooth; }
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* nothing should push the page sideways on a phone */
+body { overflow-x: hidden; }
+
+/* keep section headings clear of the sticky navbar when jumping to an anchor */
+section[id], header[id] { scroll-margin-top: 78px; }
 
 body {
     background: var(--bg);
@@ -705,19 +714,125 @@ button:focus-visible {
 
 /* ================= RESPONSIVE ================= */
 
+/* ---- Tablet and below (< 992px): nav collapses here ---- */
+
 @media (max-width: 991.98px) {
-    .app-nav .navbar-collapse { padding-block: .8rem; }
+
+    section[id], header[id] { scroll-margin-top: 70px; }
+
+    /* stacked menu: full-width rows, finger-sized targets */
+    .app-nav .navbar-collapse {
+        padding: .5rem 0 .75rem;
+        margin-top: .5rem;
+        border-top: 1px solid var(--line);
+    }
+    .app-nav .navbar-nav { gap: 0; }
+    .app-nav .nav-link {
+        padding: .6rem .25rem;
+        font-size: 1rem;
+        border-bottom: 1px dashed var(--line);
+    }
+    .app-nav .nav-item:last-child .nav-link { border-bottom: 0; }
+    .btn-theme { width: 100%; justify-content: center; padding-block: .55rem; }
+
+    .hero { padding: 60px 0 58px; }
+    .hero-text { max-width: 60ch; }
     .health-panel { margin-top: .5rem; }
+
+    .section { padding: 62px 0; }
+    .section-head { margin-bottom: 26px; }
+
+    .stages { max-width: none; }
 }
 
+
+/* ---- Small tablets / large phones (< 768px) ---- */
+
+@media (max-width: 767.98px) {
+
+    body { font-size: 15.5px; }
+
+    .hero { padding: 48px 0 46px; }
+    .hero-title { line-height: 1.12; }
+    .hero-actions { gap: .6rem; }
+    .hero-actions .btn { flex: 1 1 auto; text-align: center; }
+
+    .health-panel { padding: 20px; border-radius: 16px; }
+    .health-head { flex-wrap: wrap; }
+    .btn-recheck { order: 3; margin-left: 50px !important; }
+
+    /* chips wrap instead of stretching the page */
+    .flow { gap: .4rem; }
+    .flow-node { padding: .3rem .75rem; font-size: .82rem; }
+    .flow-link { width: 16px; }
+
+    .tile { padding: 16px; }
+    .tile-value { font-size: 1.15rem; }
+
+    .panel { padding: 18px; }
+    .terminal-body { font-size: .76rem; padding: 14px; min-height: 220px; }
+    .terminal-title { display: none; }
+
+    .history-table thead th,
+    .history-table td { padding: 11px 12px; white-space: nowrap; }
+
+    .stat-value { font-size: 1.6rem; }
+}
+
+
+/* ---- Phones (< 576px) ---- */
+
 @media (max-width: 575.98px) {
-    .hero { padding: 56px 0 52px; }
-    .section { padding: 56px 0; }
+
+    .hero { padding: 40px 0 40px; }
+    .section { padding: 48px 0; }
+
     .health-grid { grid-template-columns: 1fr; }
-    .stage { flex-wrap: wrap; }
-    .stage-flag { margin-left: 54px; }
-    .spec > div { flex-direction: column; gap: 0; }
+
+    /* stage rows go vertical so long labels never clip */
+    .stage {
+        flex-wrap: wrap;
+        row-gap: .6rem;
+        padding: 14px 16px;
+    }
+    .stage:not(:last-child)::after { left: 35px; }
+    .stage-body { flex: 1 1 100%; order: 2; }
+    .stage-body h3 { font-size: 1rem; }
+    .stage-flag { order: 1; margin-left: auto; }
+
+    .spec > div { flex-direction: column; gap: 0; padding: 8px 0; }
     .spec dd { text-align: left; }
+
+    .cmd { flex-wrap: wrap; row-gap: .5rem; padding: 10px 12px; }
+    .cmd code { flex: 1 1 100%; }
+    .btn-copy { margin-left: 0; }
+
+    .tech { padding: 14px; }
+    .tech strong { font-size: .94rem; }
+    .tech small { font-size: .76rem; }
+
+    .steps li { padding-left: 38px; }
+
+    .about-links .btn { flex: 1 1 100%; text-align: center; }
+}
+
+
+/* ---- Very narrow phones (< 380px) ---- */
+
+@media (max-width: 379.98px) {
+    .brand { font-size: 1.05rem; }
+    .hero-title { font-size: 1.85rem; }
+    .flow-link { display: none; }
+    .tile-note { display: none; }
+    .stat-value { font-size: 1.4rem; }
+}
+
+
+/* ---- Landscape phones: trim vertical padding ---- */
+
+@media (max-height: 520px) and (orientation: landscape) {
+    .hero { padding: 36px 0; }
+    .section { padding: 42px 0; }
 }
 
 
