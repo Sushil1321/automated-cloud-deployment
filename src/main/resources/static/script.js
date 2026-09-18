@@ -5,10 +5,10 @@
 
 const CONFIG = {
     // Where the "Open the application" buttons go.
-    appUrl: "http://localhost:8080",
+    appUrl: "http://16.170.140.106:8080",
 
     // Your GitHub repository.
-    repoUrl: "https://github.com/",
+    repoUrl: "https://github.com/Sushil1321/automated-cloud-deployment",
 
     // Set to true once the backend exposes a health endpoint on the
     // same origin as this page (Spring Boot Actuator does by default).
