@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudDeploy — Automated Cloud Deployment</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body data-bs-spy="scroll" data-bs-target="#mainNav" data-bs-offset="90" tabindex="0">
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar navbar-expand-lg sticky-top app-nav" id="mainNav">
+  <div class="container">
+
+    <a class="navbar-brand brand" href="#top">
+      <span class="brand-mark">☁</span> CloudDeploy
+    </a>
+
+    <button class="navbar-toggler border-0" type="button"
+            data-bs-toggle="collapse" data-bs-target="#navMenu"
+            aria-controls="navMenu" aria-expanded="false" aria-label="Open menu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item"><a class="nav-link" href="#status">Status</a></li>
+        <li class="nav-item"><a class="nav-link" href="#pipeline">Pipeline</a></li>
+        <li class="nav-item"><a class="nav-link" href="#environment">Environment</a></li>
+        <li class="nav-item"><a class="nav-link" href="#history">History</a></li>
+        <li class="nav-item"><a class="nav-link" href="#stack">Stack</a></li>
+        <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+
+        <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
+          <button class="btn btn-theme" id="themeToggle" type="button" aria-pressed="false">
+            <span id="themeIcon" aria-hidden="true">🌙</span>
+            <span id="themeLabel">Dark</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+
+<!-- ================= HERO / LIVE STATUS ================= -->
+<header class="hero" id="top">
+  <div class="container">
+    <div class="row align-items-center g-5">
+
+      <div class="col-lg-6">
+        <p class="hero-kicker">Automated cloud deployment</p>
+        <h1 class="hero-title">Every push ships itself.</h1>
+        <p class="hero-text">
+          Code pushed to GitHub is built and tested by GitHub Actions, packed into a
+          Docker image, published to Docker Hub and pulled by an AWS EC2 instance —
+          without anyone touching a server.
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn btn-deploy" href="#" id="openAppBtn" target="_blank" rel="noopener">
+            Open the application
+          </a>
+          <a class="btn btn-quiet" href="#pipeline">See the pipeline</a>
+        </div>
+
+        <div class="flow" aria-label="Pipeline summary">
+          <span class="flow-node">GitHub</span>
+          <span class="flow-link" aria-hidden="true"></span>
+          <span class="flow-node">Actions</span>
+          <span class="flow-link" aria-hidden="true"></span>
+          <span class="flow-node">Docker</span>
+          <span class="flow-link" aria-hidden="true"></span>
+          <span class="flow-node">EC2</span>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="health-panel" id="healthPanel">
+
+          <div class="health-head">
+            <span class="pulse" id="healthPulse" aria-hidden="true"></span>
+            <div>
+              <p class="health-state" id="healthState">Checking the application…</p>
+              <p class="health-sub" id="healthSub">Asking the server how it feels.</p>
+            </div>
+            <button class="btn btn-recheck ms-auto" id="recheckBtn" type="button">Re-check</button>
+          </div>
+
+          <dl class="health-grid">
+            <div>
+              <dt>Environment</dt>
+              <dd>AWS EC2</dd>
+            </div>
+            <div>
+              <dt>Container</dt>
+              <dd class="mono">automated-cloud-app</dd>
+            </div>
+            <div>
+              <dt>Port</dt>
+              <dd class="mono">8080</dd>
+            </div>
+            <div>
+              <dt>Version</dt>
+              <dd class="mono">v1.3</dd>
+            </div>
+          </dl>
+
+          <p class="health-foot" id="healthFoot">
+            Last checked <span id="lastChecked">—</span>
+          </p>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</header>
+
+
+<!-- ================= DEPLOYMENT OVERVIEW ================= -->
+<section class="section" id="status">
+  <div class="container">
+
+    <div class="section-head">
+      <h2>Deployment overview</h2>
+      <p>The four things that have to be true for the app to be live.</p>
+    </div>
+
+    <div class="row g-3 g-md-4">
+
+      <div class="col-6 col-lg-3">
+        <div class="tile tile-ok">
+          <span class="tile-icon" aria-hidden="true">🟢</span>
+          <h3>Application</h3>
+          <p class="tile-value" id="tileApp">Running</p>
+          <p class="tile-note">Serving on port 8080</p>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <div class="tile tile-ok">
+          <span class="tile-icon" aria-hidden="true">✓</span>
+          <h3>Build</h3>
+          <p class="tile-value">Success</p>
+          <p class="tile-note">Maven tests passed</p>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <div class="tile tile-ok">
+          <span class="tile-icon" aria-hidden="true">🐳</span>
+          <h3>Docker</h3>
+          <p class="tile-value">Ready</p>
+          <p class="tile-note">Image pushed to Docker Hub</p>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <div class="tile tile-ok">
+          <span class="tile-icon" aria-hidden="true">☁</span>
+          <h3>AWS EC2</h3>
+          <p class="tile-value">Deployed</p>
+          <p class="tile-note">Stockholm, t3.micro</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ================= PIPELINE ================= -->
+<section class="section section-alt" id="pipeline">
+  <div class="container">
+
+    <div class="section-head">
+      <h2>The pipeline, stage by stage</h2>
+      <p>Six stages run in order. If one fails, the deployment stops there.</p>
+    </div>
+
+    <ol class="stages">
+
+      <li class="stage is-done">
+        <span class="stage-index">1</span>
+        <div class="stage-body">
+          <h3>GitHub <span class="stage-icon" aria-hidden="true">🔗</span></h3>
+          <p>A push to the main branch is the only trigger.</p>
+        </div>
+        <span class="stage-flag">Completed</span>
+      </li>
+
+      <li class="stage is-done">
+        <span class="stage-index">2</span>
+        <div class="stage-body">
+          <h3>GitHub Actions <span class="stage-icon" aria-hidden="true">⚙</span></h3>
+          <p>A runner checks out the code and starts the workflow.</p>
+        </div>
+        <span class="stage-flag">Completed</span>
+      </li>
+
+      <li class="stage is-done">
+        <span class="stage-index">3</span>
+        <div class="stage-body">
+          <h3>Maven <span class="stage-icon" aria-hidden="true">🔨</span></h3>
+          <p>Unit tests run, then the Spring Boot jar is packaged.</p>
+        </div>
+        <span class="stage-flag">Completed</span>
+      </li>
+
+      <li class="stage is-done">
+        <span class="stage-index">4</span>
+        <div class="stage-body">
+          <h3>Docker <span class="stage-icon" aria-hidden="true">🐳</span></h3>
+          <p>The jar is copied into an image built from the Dockerfile.</p>
+        </div>
+        <span class="stage-flag">Completed</span>
+      </li>
+
+      <li class="stage is-done">
+        <span class="stage-index">5</span>
+        <div class="stage-body">
+          <h3>Docker Hub <span class="stage-icon" aria-hidden="true">📦</span></h3>
+          <p>The image is pushed and tagged <span class="mono">latest</span>.</p>
+        </div>
+        <span class="stage-flag">Completed</span>
+      </li>
+
+      <li class="stage is-done">
+        <span class="stage-index">6</span>
+        <div class="stage-body">
+          <h3>AWS EC2 <span class="stage-icon" aria-hidden="true">☁</span></h3>
+          <p>The instance pulls the image and restarts the container.</p>
+        </div>
+        <span class="stage-flag">Completed</span>
+      </li>
+
+    </ol>
+  </div>
+</section>
+
+
+<!-- ================= BUILD / DOCKER / AWS ================= -->
+<section class="section" id="environment">
+  <div class="container">
+
+    <div class="section-head">
+      <h2>What the pipeline produced</h2>
+      <p>Build output, the image it created, and where that image is running.</p>
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-lg-4">
+        <div class="panel">
+          <h3 class="panel-title"><span aria-hidden="true">🧪</span> Build &amp; test</h3>
+          <dl class="spec">
+            <div><dt>Build status</dt><dd class="ok">Success</dd></div>
+            <div><dt>Tests</dt><dd class="ok">Passed</dd></div>
+            <div><dt>Java</dt><dd class="mono">21</dd></div>
+            <div><dt>Maven</dt><dd class="mono">3.9</dd></div>
+            <div><dt>Spring Boot</dt><dd class="mono">4.x</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="panel">
+          <h3 class="panel-title"><span aria-hidden="true">🐳</span> Container image</h3>
+          <dl class="spec">
+            <div><dt>Image</dt><dd class="mono break">sushil1321/automated-cloud-deployment</dd></div>
+            <div><dt>Tag</dt><dd class="mono">latest</dd></div>
+            <div><dt>Container</dt><dd class="mono">automated-cloud-app</dd></div>
+            <div><dt>Port</dt><dd class="mono">8080</dd></div>
+            <div><dt>State</dt><dd class="ok">Running</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="panel">
+          <h3 class="panel-title"><span aria-hidden="true">☁</span> Cloud environment</h3>
+          <dl class="spec">
+            <div><dt>Provider</dt><dd>AWS</dd></div>
+            <div><dt>Service</dt><dd>EC2</dd></div>
+            <div><dt>Region</dt><dd>Europe (Stockholm)</dd></div>
+            <div><dt>Instance</dt><dd class="mono">t3.micro</dd></div>
+            <div><dt>App port</dt><dd class="mono">8080</dd></div>
+          </dl>
+          <p class="panel-note">No keys, credentials or instance addresses are published here.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ================= HISTORY + STATS ================= -->
+<section class="section section-alt" id="history">
+  <div class="container">
+
+    <div class="section-head">
+      <h2>Deployment history</h2>
+      <p>
+        Sample data for now
+        <span class="badge-demo">demo</span> — the workflow can write real entries later.
+      </p>
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-lg-7">
+        <div class="panel panel-flush">
+          <div class="table-responsive">
+            <table class="table table-borderless align-middle history-table mb-0">
+              <thead>
+                <tr><th scope="col">Version</th><th scope="col">Result</th><th scope="col">Trigger</th><th scope="col">When</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="mono">v1.3</td><td><span class="pill pill-ok">Success</span></td><td>Push to main</td><td>Today</td></tr>
+                <tr><td class="mono">v1.2</td><td><span class="pill pill-ok">Success</span></td><td>Push to main</td><td>Yesterday</td></tr>
+                <tr><td class="mono">v1.1</td><td><span class="pill pill-ok">Success</span></td><td>Re-run</td><td>Yesterday</td></tr>
+                <tr><td class="mono">v1.0</td><td><span class="pill pill-ok">Success</span></td><td>Push to main</td><td>18 Sept</td></tr>
+                <tr><td class="mono">v0.9</td><td><span class="pill pill-ok">Success</span></td><td>Push to main</td><td>18 Sept</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="row g-3">
+
+          <div class="col-6">
+            <div class="stat">
+              <p class="stat-value" data-count="12">0</p>
+              <p class="stat-label">Deployments</p>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="stat">
+              <p class="stat-value" data-count="11">0</p>
+              <p class="stat-label">Successful</p>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="stat">
+              <p class="stat-value" data-count="1">0</p>
+              <p class="stat-label">Failed</p>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="stat">
+              <p class="stat-value" data-count="99" data-suffix="%">0</p>
+              <p class="stat-label">Uptime</p>
+            </div>
+          </div>
+
+        </div>
+        <p class="stat-note">
+          These counts are sample figures shown to illustrate the dashboard.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ================= LOGS ================= -->
+<section class="section" id="logs">
+  <div class="container">
+
+    <div class="section-head">
+      <h2>Deployment log</h2>
+      <p>A replay of the last run <span class="badge-demo">demo</span></p>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="terminal-title mono">actions-runner — deploy.yml</span>
+        <button class="btn btn-replay ms-auto" id="replayBtn" type="button">Replay</button>
+      </div>
+      <pre class="terminal-body mono" id="logBody" aria-live="polite"></pre>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ================= TECH STACK ================= -->
+<section class="section section-alt" id="stack">
+  <div class="container">
+
+    <div class="section-head">
+      <h2>Built with</h2>
+      <p>Seven tools, each doing one job in the chain.</p>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tech"><span aria-hidden="true">☕</span><strong>Java</strong><small>Spring Boot service</small></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tech"><span aria-hidden="true">🔨</span><strong>Maven</strong><small>Build and test</small></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tech"><span aria-hidden="true">🐳</span><strong>Docker</strong><small>Containerisation</small></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tech"><span aria-hidden="true">🔗</span><strong>GitHub</strong><small>Source control</small></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tech"><span aria-hidden="true">⚙</span><strong>GitHub Actions</strong><small>CI/CD workflow</small></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tech"><span aria-hidden="true">📦</span><strong>Docker Hub</strong><small>Image registry</small></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tech"><span aria-hidden="true">☁</span><strong>AWS EC2</strong><small>Cloud host</small></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tech"><span aria-hidden="true">🖥</span><strong>Bootstrap 5</strong><small>Dashboard UI</small></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ================= HOW IT WORKS + ABOUT ================= -->
+<section class="section" id="about">
+  <div class="container">
+    <div class="row g-5">
+
+      <div class="col-lg-6">
+        <div class="section-head section-head-tight">
+          <h2>How it works</h2>
+          <p>From a commit on a laptop to a running container in Stockholm.</p>
+        </div>
+
+        <ol class="steps">
+          <li>A developer pushes code to GitHub.</li>
+          <li>GitHub Actions picks up the push and starts the workflow.</li>
+          <li>Maven runs the tests.</li>
+          <li>The Spring Boot application is packaged.</li>
+          <li>A Docker image is built from that package.</li>
+          <li>The image is pushed to Docker Hub.</li>
+          <li>The EC2 instance pulls the newest image.</li>
+          <li>The old container is replaced by a new one.</li>
+        </ol>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="section-head section-head-tight">
+          <h2>About this project</h2>
+        </div>
+        <p class="prose">
+          Automated Cloud Deployment is a cloud and DevOps project that shows continuous
+          integration and continuous deployment end to end. The application itself is a
+          small Spring Boot service; the interesting part is everything that happens
+          between a commit and that service running on a cloud instance.
+        </p>
+        <p class="prose">
+          This page is the project's front door: it reports what is deployed, how it got
+          there, and which tools were involved. Figures marked as demo are placeholders
+          until the workflow records real ones.
+        </p>
+
+        <div class="about-links">
+          <a class="btn btn-deploy" href="#" id="openAppBtn2" target="_blank" rel="noopener">Open the application</a>
+          <a class="btn btn-quiet" href="#" id="repoBtn" target="_blank" rel="noopener">View the repository</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ================= FOOTER ================= -->
+<footer class="footer">
+  <div class="container">
+    <p class="footer-brand">☁ CloudDeploy</p>
+    <p>Automated cloud deployment using a CI/CD pipeline</p>
+    <p class="footer-tech mono">Spring Boot · Maven · Docker · GitHub Actions · AWS EC2</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

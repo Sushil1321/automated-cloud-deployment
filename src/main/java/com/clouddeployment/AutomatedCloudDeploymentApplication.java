@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class AutomatedCloudDeploymentApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(AutomatedCloudDeploymentApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(AutomatedCloudDeploymentApplication.class, args);
+    }
 }
