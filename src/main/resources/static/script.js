@@ -1,99 +1,361 @@
-/* CloudDeploy — dashboard behaviour. Edit CONFIG only. */
+
+/* CloudDeploy — Dashboard Behaviour
+   Update CONFIG when your application URL changes.
+*/
+
 const CONFIG = {
-  appUrl: "http://16.170.140.106:8080",
-  repoUrl: "https://github.com/Sushil1321/automated-cloud-deployment",
-  // Turn on once the backend serves a health endpoint on the same origin as this page.
-  liveCheck: false,
-  healthUrl: "/actuator/health",
-  pollMs: 30000 // 0 turns polling off
+    appUrl: "http://16.171.3.12:8080",
+    repoUrl: "https://github.com/Sushil1321/automated-cloud-deployment",
+
+    // Keep false until you have configured a working health endpoint.
+    liveCheck: false,
+    healthUrl: "/actuator/health",
+    pollMs: 30000
 };
 
-const $ = id => document.getElementById(id);
-const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (id) => document.getElementById(id);
 
-/* links */
-["openAppBtn", "openAppBtn2"].forEach(id => { $(id).href = CONFIG.appUrl; });
-$("repoBtn").href = CONFIG.repoUrl;
+const reduceMotion = window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    : false;
 
-/* health */
+
+/* ========================================
+   1. INITIALIZE DASHBOARD
+======================================== */
+
+function initDashboard() {
+    setupLinks();
+    setupHealthCheck();
+    setupCounters();
+    setupDeploymentLog();
+}
+
+
+/* ========================================
+   2. APPLICATION AND REPOSITORY LINKS
+======================================== */
+
+function setupLinks() {
+    ["openAppBtn", "openAppBtn2"].forEach((id) => {
+        const link = $(id);
+
+        if (link) {
+            link.href = CONFIG.appUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+        }
+    });
+
+    const repoBtn = $("repoBtn");
+
+    if (repoBtn) {
+        repoBtn.href = CONFIG.repoUrl;
+        repoBtn.target = "_blank";
+        repoBtn.rel = "noopener noreferrer";
+    }
+}
+
+
+/* ========================================
+   3. APPLICATION STATUS
+======================================== */
+
 function setHealth(state, headline, detail) {
-  const pulse = $("healthPulse");
-  pulse.className = "pulse" + (state === "ok" ? " is-ok" : state === "fail" ? " is-fail" : "");
-  $("healthState").textContent = headline;
-  $("healthSub").textContent = detail;
-  $("lastChecked").textContent = new Date().toLocaleTimeString();
-  $("tileApp").textContent = state === "ok" ? "Running" : state === "fail" ? "Down" : "Unknown";
+    const pulse = $("healthPulse");
+    const stateText = $("healthState");
+    const subText = $("healthSub");
+    const checkedText = $("lastChecked");
+    const tileApp = $("tileApp");
+
+    if (pulse) {
+        pulse.className =
+            "pulse" +
+            (state === "ok" ? " is-ok" :
+             state === "fail" ? " is-fail" : "");
+    }
+
+    if (stateText) {
+        stateText.textContent = headline;
+    }
+
+    if (subText) {
+        subText.textContent = detail;
+    }
+
+    if (checkedText) {
+        checkedText.textContent = new Date().toLocaleTimeString();
+    }
+
+    if (tileApp) {
+        tileApp.textContent =
+            state === "ok" ? "Running" :
+            state === "fail" ? "Down" : "Unknown";
+    }
 }
 
-async function checkHealth() {
-  if (!CONFIG.liveCheck) {
-    return setHealth("ok", "Application is running",
-      "Shown from the page config. Set liveCheck to true to poll the server.");
-  }
-  setHealth("idle", "Checking the application…", "Asking the server how it feels.");
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 5000);
-  try {
-    const res = await fetch(CONFIG.healthUrl, { signal: ctrl.signal, cache: "no-store" });
-    const body = await res.json().catch(() => ({}));
-    const up = res.ok && (body.status === undefined || body.status === "UP");
-    up ? setHealth("ok", "Application is running", "The container answered on port 8080.")
-       : setHealth("fail", "Application is not healthy", "The server answered but is not ready. Check the container logs on EC2.");
-  } catch {
-    setHealth("fail", "Application is unreachable",
-      "No answer from " + CONFIG.healthUrl + ". Check the container is up and the port is open.");
-  } finally { clearTimeout(timer); }
-}
-$("recheckBtn").addEventListener("click", checkHealth);
-checkHealth();
-if (CONFIG.liveCheck && CONFIG.pollMs > 0) setInterval(checkHealth, CONFIG.pollMs);
+function setupHealthCheck() {
+    const recheckBtn = $("recheckBtn");
 
-/* log replay */
-const LOG = [
-  ["INFO", "Checking out source from GitHub"],
-  ["INFO", "Setting up Java 21 and Maven 3.9"],
-  ["INFO", "Running mvn test"],
-  ["OK", "All tests passed"],
-  ["INFO", "Packaging Spring Boot application"],
-  ["INFO", "Building Docker image"],
-  ["INFO", "Pushing sushil1321/automated-cloud-deployment:latest"],
-  ["INFO", "Connecting to AWS EC2 instance"],
-  ["INFO", "Pulling newest image"],
-  ["INFO", "Stopping container automated-cloud-app"],
-  ["INFO", "Starting container on port 8080"],
-  ["OK", "Deployment successful"]
-];
-const logBody = $("logBody");
-let logTimer;
+    async function checkHealth() {
+        if (!CONFIG.liveCheck) {
+            setHealth(
+                "idle",
+                "Live check is disabled",
+                "The dashboard is not currently checking the server."
+            );
+            return;
+        }
 
-function renderLog(n) {
-  logBody.innerHTML = LOG.slice(0, n)
-    .map(([t, msg]) => `<span class="${t === "OK" ? "t-ok" : "t-tag"}">[${t.padEnd(4)}]</span> ${msg}`)
-    .join("\n") + (n < LOG.length ? '\n<span class="caret">&nbsp;</span>' : "");
-}
-function playLog() {
-  clearInterval(logTimer);
-  if (reduceMotion) return renderLog(LOG.length);
-  let i = 0;
-  renderLog(0);
-  logTimer = setInterval(() => { renderLog(++i); if (i >= LOG.length) clearInterval(logTimer); }, 320);
-}
-$("replayBtn").addEventListener("click", playLog);
+        setHealth(
+            "idle",
+            "Checking application...",
+            "Contacting the health endpoint."
+        );
 
-/* counters + log start when scrolled into view */
-function countUp(el) {
-  const target = +el.dataset.count, suffix = el.dataset.suffix || "";
-  if (reduceMotion) { el.textContent = target + suffix; return; }
-  let s = 0;
-  const t = setInterval(() => {
-    el.textContent = Math.round(target * ++s / 28) + suffix;
-    if (s >= 28) clearInterval(t);
-  }, 28);
+        const controller = new AbortController();
+
+        const timeoutId = window.setTimeout(() => {
+            controller.abort();
+        }, 5000);
+
+        try {
+            const response = await fetch(CONFIG.healthUrl, {
+                method: "GET",
+                cache: "no-store",
+                signal: controller.signal
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            const healthy =
+                response.ok &&
+                (data.status === undefined || data.status === "UP");
+
+            if (healthy) {
+                setHealth(
+                    "ok",
+                    "Application is responding",
+                    "The health endpoint returned a healthy response."
+                );
+            } else {
+                setHealth(
+                    "fail",
+                    "Application is not healthy",
+                    "Check the health endpoint and container logs."
+                );
+            }
+        } catch (error) {
+            setHealth(
+                "fail",
+                "Health check failed",
+                "Could not reach the health endpoint. Check the server and URL."
+            );
+        } finally {
+            window.clearTimeout(timeoutId);
+        }
+    }
+
+    if (recheckBtn) {
+        recheckBtn.addEventListener("click", checkHealth);
+    }
+
+    checkHealth();
+
+    if (CONFIG.liveCheck && CONFIG.pollMs > 0) {
+        window.setInterval(checkHealth, CONFIG.pollMs);
+    }
 }
-const io = new IntersectionObserver(entries => entries.forEach(e => {
-  if (!e.isIntersecting) return;
-  io.unobserve(e.target);
-  e.target.id === "logBody" ? playLog() : countUp(e.target);
-}), { threshold: 0.4 });
-document.querySelectorAll("[data-count]").forEach(el => io.observe(el));
-io.observe(logBody);
+
+
+/* ========================================
+   4. DEPLOYMENT STATISTICS COUNTERS
+======================================== */
+
+function setupCounters() {
+    const counters = document.querySelectorAll("[data-count]");
+
+    function animateCounter(element) {
+        if (element.dataset.counted === "true") {
+            return;
+        }
+
+        element.dataset.counted = "true";
+
+        const target = Number(element.dataset.count);
+        const suffix = element.dataset.suffix || "";
+
+        if (!Number.isFinite(target)) {
+            element.textContent = "0" + suffix;
+            return;
+        }
+
+        if (reduceMotion || target === 0) {
+            element.textContent = target + suffix;
+            return;
+        }
+
+        const duration = 900;
+        const startTime = performance.now();
+
+        function update(now) {
+            const progress = Math.min(
+                (now - startTime) / duration,
+                1
+            );
+
+            // Smooth animation.
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const currentValue = Math.round(target * eased);
+
+            element.textContent = currentValue + suffix;
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                element.textContent = target + suffix;
+            }
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    // No scrolling or IntersectionObserver required.
+    counters.forEach(animateCounter);
+}
+
+
+/* ========================================
+   5. DEPLOYMENT LOG REPLAY
+======================================== */
+
+function setupDeploymentLog() {
+    const logBody = $("logBody");
+    const replayBtn = $("replayBtn");
+
+    if (!logBody || !replayBtn) {
+        console.error(
+            "Deployment log not initialized: logBody or replayBtn is missing."
+        );
+        return;
+    }
+
+    // These are example messages, not live GitHub Actions logs.
+    const LOG = [
+        ["INFO", "Starting CI/CD deployment workflow"],
+        ["INFO", "Checking out source code from GitHub"],
+        ["INFO", "Setting up Java 21 and Maven"],
+        ["INFO", "Running Maven tests"],
+        ["OK", "Maven tests completed successfully"],
+        ["INFO", "Building the Spring Boot application"],
+        ["INFO", "Creating Docker image"],
+        ["INFO", "Logging in to Docker Hub"],
+        ["INFO", "Pushing image to Docker Hub"],
+        ["INFO", "Connecting to AWS EC2"],
+        ["INFO", "Pulling the latest Docker image"],
+        ["INFO", "Restarting automated-cloud-app"],
+        ["OK", "Deployment workflow completed"]
+    ];
+
+    let timer = null;
+    let runNumber = 0;
+
+    function addLogLine(type, message) {
+        const line = document.createElement("div");
+        const label = document.createElement("span");
+
+        label.className = type === "OK" ? "t-ok" : "t-tag";
+        label.textContent = "[" + type + "] ";
+
+        line.appendChild(label);
+        line.appendChild(document.createTextNode(message));
+
+        logBody.appendChild(line);
+    }
+
+    function replayLog() {
+        runNumber++;
+        const thisRun = runNumber;
+
+        if (timer !== null) {
+            window.clearInterval(timer);
+            timer = null;
+        }
+
+        logBody.replaceChildren();
+
+        replayBtn.disabled = true;
+        replayBtn.textContent = "Running...";
+
+        let index = 0;
+
+        function finish() {
+            if (thisRun !== runNumber) {
+                return;
+            }
+
+            if (timer !== null) {
+                window.clearInterval(timer);
+                timer = null;
+            }
+
+            replayBtn.disabled = false;
+            replayBtn.textContent = "Replay";
+        }
+
+        function showNextLine() {
+            if (thisRun !== runNumber) {
+                return;
+            }
+
+            if (index >= LOG.length) {
+                finish();
+                return;
+            }
+
+            const [type, message] = LOG[index];
+
+            addLogLine(type, message);
+            index++;
+
+            if (index >= LOG.length) {
+                finish();
+            }
+        }
+
+        // Display the complete log for users who prefer reduced motion.
+        if (reduceMotion) {
+            LOG.forEach(([type, message]) => {
+                addLogLine(type, message);
+            });
+
+            finish();
+            return;
+        }
+
+        // Show the first line immediately.
+        showNextLine();
+
+        if (index < LOG.length) {
+            timer = window.setInterval(showNextLine, 500);
+        }
+    }
+
+    replayBtn.addEventListener("click", replayLog);
+
+    // Automatically display the log on page load.
+    replayLog();
+}
+
+
+/* ========================================
+   6. START THE DASHBOARD
+======================================== */
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDashboard, {
+        once: true
+    });
+} else {
+    initDashboard();
+}
